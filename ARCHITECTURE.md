@@ -197,3 +197,48 @@ not a code-review nit. It also gives a single shared type vocabulary across back
 frontend (`Item`, `CartLine`, `Order`, `StockUpdate`), catching contract drift between
 the API and the UI at build time. For a concurrency-sensitive app where correctness
 matters, that safety net is worth the small amount of ceremony.
+
+---
+
+## 9. Testing strategy (additive layer)
+
+Three test layers, matched to what each is good at — added without changing any route,
+entity, or use case:
+
+- **Domain unit tests** (`backend/src/**/*.spec.ts`, Jest) run against the pure domain
+  layer with **zero infrastructure** — no DB, no Redis, no mocks. That's only possible
+  *because* the invariants live in dependency-free entities; the tests are the proof that
+  the layering pays off. `npm test`, ~0.5s.
+- **Integration tests** (`backend/tests/integration/`, Jest + Supertest) run against the
+  **real** Docker Mongo + Redis and drive the real Express app. The headline test is the
+  concurrency guarantee (20 parallel adds → exactly 3 succeed, stock never negative);
+  two more cover event-driven expiry and the checkout-clears-reservation tradeoff called
+  out in §3. `npm run test:integration`.
+- **E2E tests** (`e2e/`, Playwright) drive a real browser against the full running stack,
+  covering the happy path and the live cross-client stock sync.
+
+### Two decisions worth noting
+
+**`bootstrap()` extraction.** `server.ts` previously ran an inline `main()` that built the
+app *and* called `listen()` on import. To let Supertest drive the real app, that was split
+into an exported `bootstrap()` (wires everything, returns the app + a `close()` teardown,
+does **not** listen) and a `start()` that calls it then listens. A run-directly guard
+(`import.meta.url === pathToFileURL(process.argv[1]).href`) means importing the module in a
+test never starts a listener. This is the *only* production-code change the testing work
+required, and it changes no behaviour — the dev/prod entrypoint is byte-for-byte equivalent
+in effect.
+
+**E2E lives in a top-level `e2e/` folder**, not inside `frontend/`. The E2E suite exercises
+the frontend *and* backend *and* the Socket.io channel between them — it isn't a frontend
+unit concern, and coupling it to the Angular app's dependencies/build would misrepresent
+its scope. A standalone package with its own `package.json` (invoked via the root
+`npm run test:e2e`) keeps that boundary honest and lets Playwright own the full-stack
+`webServer` lifecycle.
+
+### API documentation
+
+OpenAPI/Swagger docs are generated from `@openapi` JSDoc blocks on the route definitions
+(component schemas centralized in `interfaces/http/openapi.ts`) and served at
+`GET /api-docs`. The annotations sit on the existing single `routes.ts` — the routes were
+**not** restructured into `routes/*.ts`, since that would have changed the existing
+architecture for a docs-only feature.

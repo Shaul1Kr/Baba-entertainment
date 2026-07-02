@@ -1,0 +1,9 @@
+{
+  "name": "flashsale-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flash-sale store (Express + TS + MongoDB + Redis + Angular). Infra via docker-compose.",
+  "scripts": {
+    "test:e2e": "npm --prefix e2e test"
+  }
+}

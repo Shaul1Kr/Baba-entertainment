@@ -101,6 +101,9 @@ All routes except `/auth/login` and `/items` require `Authorization: Bearer <tok
 
 Socket.io event: `stock:update { itemId, remaining }`.
 
+**Interactive API docs (Swagger UI):** with the backend running, open
+**http://localhost:3000/api-docs**.
+
 ---
 
 ## Project layout
@@ -109,17 +112,46 @@ Socket.io event: `stock:update { itemId, remaining }`.
 docker-compose.yml        # Mongo + Redis (infra only)
 .env.example
 backend/                  # Express + TS, Domain-Driven layering (see ARCHITECTURE.md)
-  src/domain/             #   entities + repository INTERFACES (zero infra deps)
+  src/domain/             #   entities + repository INTERFACES (zero infra deps) + *.spec.ts
   src/application/        #   use cases (one per action) + ports
   src/infrastructure/     #   Mongoose repos, Redis (Lua + service + expiry sub), sockets
-  src/interfaces/http/    #   thin Express routes + controllers
+  src/interfaces/http/    #   thin Express routes + controllers + openapi.ts (Swagger)
+  tests/integration/      #   Supertest specs against real Docker Mongo/Redis
 frontend/                 # Angular standalone + Tailwind v4, BehaviorSubject state (no NgRx)
+e2e/                      # Playwright end-to-end tests (full stack, system Chrome)
 ```
 
 ---
 
-## Verifying the concurrency guarantee
+## Testing
 
-Fire 20 concurrent add-to-cart requests at a 3-stock item — exactly 3 succeed, 17 get
-`409`, and Redis stock lands at `0` (never negative). See ARCHITECTURE.md for the full
-list of scenarios exercised during the build.
+Three layers, each with a different cost/scope. Unit tests are fast and need nothing;
+the others need the Docker infra (and, for E2E, the app itself — Playwright starts it).
+
+| Command | Where | Needs | What it proves |
+|---------|-------|-------|----------------|
+| `npm test` | `backend/` | nothing (pure domain) | Entity invariants: `Item` rejects negative/invalid stock, `CartItem` rejects non-positive qty, `Order` total is derived and can't drift, `User` requires a name. Runs in ~0.5s with no DB/Redis. |
+| `npm run test:integration` | `backend/` | `docker-compose up -d` | **The core guarantee.** 20 concurrent `/cart/add` on a 3-stock item → exactly 3× `200`, 17× `409`, Redis stock `= 0` (never negative). Plus: reservation expiry restores stock + clears the cart row, and checkout removes the reservation key so a later expiry can't double-credit sold stock. |
+| `npm run test:e2e` | project root | Docker up + Chrome | Real browser, full stack. (A) happy path: login → add → checkout → confirmation shows the order. (B) live sync: two users, one adds an item, the other's stock count updates with no reload. |
+
+```bash
+# fast unit tests — no infrastructure
+cd backend && npm test
+
+# integration tests — start infra first
+docker-compose up -d
+cd backend && npm run test:integration
+
+# end-to-end — Playwright boots the backend (reseeded) + frontend automatically
+docker-compose up -d
+npm run test:e2e          # from the project root
+```
+
+> The integration tests share the dev Mongo/Redis, so stop any running dev backend first
+> (its expiry subscriber would double-handle events). The E2E runner reseeds a clean
+> catalogue on startup.
+
+The concurrency guarantee, run manually: fire 20 concurrent add-to-cart requests at a
+3-stock item — exactly 3 succeed, 17 get `409`, and Redis stock lands at `0` (never
+negative). This is exactly what `test:integration` asserts. See ARCHITECTURE.md for the
+full reasoning.
