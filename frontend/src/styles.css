@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+/* ---- Jackpot Drop casino theme, defined as Tailwind v4 theme tokens ----
+   These generate utilities like bg-bg, text-gold, border-edge, etc.        */
+@theme {
+  --color-bg: #0a0a0f;
+  --color-bg-elev: #14141c;
+  --color-card: #1a1a24;
+  --color-edge: #2a2a38;
+  --color-gold: #ffc633;
+  --color-gold-deep: #e0a000;
+  --color-amber: #ff9e2c;
+  --color-danger: #ff4d4d;
+  --color-success: #38d17a;
+  --color-ink: #f4f4f8;
+  --color-dim: #9a9aae;
+
+  --font-head: 'Baloo 2', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --shadow-glow: 0 0 22px rgba(255, 198, 51, 0.35);
+  --shadow-glow-strong: 0 0 34px rgba(255, 198, 51, 0.55);
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(1200px 600px at 50% -10%, rgba(255, 198, 51, 0.08), transparent 60%),
+    var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-head {
+  font-family: var(--font-head);
+}
+
+/* Patterns reused across 3+ templates, extracted per the styling guidance. */
+@utility btn-gold {
+  @apply font-head font-extrabold uppercase tracking-wide rounded-xl
+         px-5 py-3 text-[#201400] transition
+         disabled:cursor-not-allowed disabled:text-dim;
+  background: linear-gradient(180deg, var(--color-gold), var(--color-gold-deep));
+  box-shadow: var(--shadow-glow);
+}
+.btn-gold:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+.btn-gold:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-gold:disabled {
+  background: #3a3a48;
+  box-shadow: none;
+}
+
+@utility btn-ghost {
+  @apply font-head font-bold rounded-lg px-4 py-2 text-dim
+         border border-edge transition hover:text-ink hover:border-gold bg-transparent;
+}
+
+/* Slot-machine tile — the storefront card shell. */
+@utility slot-tile {
+  @apply bg-card border border-edge rounded-2xl overflow-hidden transition;
+}
+.slot-tile:hover {
+  border-color: var(--color-gold);
+  box-shadow: var(--shadow-glow);
+  transform: translateY(-3px);
+}

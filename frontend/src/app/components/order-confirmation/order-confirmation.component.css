@@ -1,0 +1,47 @@
+/* Coin-burst + pop celebration. Pure CSS, no assets. */
+.pop {
+  animation: pop 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+@keyframes pop {
+  0% { transform: scale(0.3); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.coin-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.coin {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  font-size: 1.6rem;
+  /* Fan the coins out around a circle using the index custom property. */
+  --angle: calc(var(--i) * 25.7deg);
+  animation: coin-fly 1.4s ease-out forwards;
+  animation-delay: calc(var(--i) * 40ms);
+  opacity: 0;
+}
+
+@keyframes coin-fly {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform:
+      translate(
+        calc(-50% + cos(var(--angle)) * 46vw),
+        calc(-50% + sin(var(--angle)) * 60vh)
+      )
+      rotate(540deg);
+    opacity: 0;
+  }
+}

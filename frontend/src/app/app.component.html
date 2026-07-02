@@ -1,0 +1,63 @@
+@if (session$ | async; as session) {
+  @if (order$ | async) {
+    <!-- Success state -->
+    <app-order-confirmation></app-order-confirmation>
+  } @else {
+    <!-- Store state -->
+    <header
+      class="sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 py-4
+             bg-bg/80 backdrop-blur border-b border-edge"
+    >
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🎰</span>
+        <span class="font-head text-xl font-extrabold text-gold">JACKPOT DROP</span>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span class="text-dim text-sm hidden sm:inline">Hi, {{ session.name }}</span>
+        <button class="relative btn-ghost" (click)="drawerOpen.set(true)">
+          Cart
+          @if ((cartCount$ | async); as count) {
+            @if (count > 0) {
+              <span
+                class="absolute -top-2 -right-2 bg-gold text-[#201400] text-xs font-head
+                       font-extrabold rounded-full min-w-5 h-5 px-1 flex items-center justify-center"
+              >{{ count }}</span>
+            }
+          }
+        </button>
+        <button class="btn-ghost" (click)="logout()">Exit</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="text-center pt-8 px-4">
+        <h1 class="font-head text-3xl sm:text-4xl font-extrabold text-ink">
+          Live Flash Sale <span class="text-gold">— stock is dropping fast</span>
+        </h1>
+        <p class="text-dim mt-2">
+          Adding to cart reserves your item instantly. Counters update live.
+        </p>
+      </div>
+
+      <app-store-list></app-store-list>
+    </main>
+
+    <app-cart-drawer
+      [open]="drawerOpen()"
+      (close)="drawerOpen.set(false)"
+    ></app-cart-drawer>
+
+    <!-- Global error toast -->
+    @if (error$ | async; as error) {
+      <div
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] bg-danger/15 border border-danger/50
+               text-danger font-head font-bold px-5 py-3 rounded-xl backdrop-blur"
+      >
+        {{ error }}
+      </div>
+    }
+  }
+} @else {
+  <app-login></app-login>
+}

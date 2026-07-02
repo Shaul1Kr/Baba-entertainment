@@ -1,0 +1,31 @@
+<div class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+  <!-- CSS coin burst — no external assets -->
+  <div class="coin-burst" aria-hidden="true">
+    <span class="coin" *ngFor="let c of coins" [style.--i]="c">🪙</span>
+  </div>
+
+  <div class="slot-tile w-full max-w-lg p-8 text-center relative z-10" *ngIf="view$ | async as order">
+    <div class="text-6xl mb-3 pop">🎉</div>
+    <h1 class="font-head text-3xl font-extrabold text-gold">JACKPOT!</h1>
+    <p class="text-dim mt-2 mb-6">Your order is locked in. Nice grab.</p>
+
+    <div class="bg-bg-elev border border-edge rounded-xl p-4 text-left mb-6">
+      <div class="text-dim text-xs mb-2">Order #{{ order.orderId }}</div>
+      <div
+        class="flex items-center justify-between text-sm py-1"
+        *ngFor="let line of order.lines"
+      >
+        <span class="text-ink">{{ line.qty }} × {{ line.name }}</span>
+        <span class="text-ink">{{ line.subtotal | currency }}</span>
+      </div>
+      <div class="flex items-center justify-between border-t border-edge mt-2 pt-2">
+        <span class="text-dim">Total paid</span>
+        <span class="font-head text-xl font-extrabold text-gold">
+          {{ order.total | currency }}
+        </span>
+      </div>
+    </div>
+
+    <button class="btn-gold w-full" (click)="backToStore()">Back to store</button>
+  </div>
+</div>
