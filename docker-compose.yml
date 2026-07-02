@@ -1,0 +1,22 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: flashsale-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  redis:
+    image: redis:7
+    container_name: flashsale-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    # Enable keyspace notifications for EXPIRED events (the "Ex" flags).
+    # This is what powers the event-driven reservation expiry.
+    command: ["redis-server", "--notify-keyspace-events", "Ex"]
+
+volumes:
+  mongo-data:
