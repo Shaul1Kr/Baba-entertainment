@@ -11,4 +11,9 @@ export interface CartItemRepository {
   save(cartItem: CartItem): Promise<CartItem>;
   deleteById(id: string): Promise<void>;
   deleteByUser(userId: string): Promise<void>;
+  /**
+   * Reserved quantity per item summed across ALL users' carts. Used at startup
+   * to reconcile Redis stock counters against outstanding reservations.
+   */
+  aggregateReservedQuantities(): Promise<{ itemId: string; qty: number }[]>;
 }

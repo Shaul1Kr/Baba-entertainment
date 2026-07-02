@@ -1,4 +1,4 @@
-import type Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import { parseReservationKey } from './RedisClient.js';
 
 /**

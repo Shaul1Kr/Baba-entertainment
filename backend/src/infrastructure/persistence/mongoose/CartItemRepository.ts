@@ -54,4 +54,11 @@ export class MongooseCartItemRepository implements CartItemRepository {
   async deleteByUser(userId: string): Promise<void> {
     await CartItemModel.deleteMany({ userId });
   }
+
+  async aggregateReservedQuantities(): Promise<{ itemId: string; qty: number }[]> {
+    const rows = await CartItemModel.aggregate<{ _id: Types.ObjectId; qty: number }>([
+      { $group: { _id: '$itemId', qty: { $sum: '$qty' } } },
+    ]);
+    return rows.map((r) => ({ itemId: r._id.toString(), qty: r.qty }));
+  }
 }

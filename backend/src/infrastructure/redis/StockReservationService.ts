@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type Redis from 'ioredis';
+import type { Redis } from 'ioredis';
 import { reservationKey, stockKey } from './RedisClient.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -88,5 +88,14 @@ export class StockReservationService {
       await this.redis.del(reservationKey(cartItemId));
     }
     return remaining;
+  }
+
+  /**
+   * Drop a reservation key WITHOUT returning stock. Used at checkout: the units
+   * were actually sold, so we must cancel the pending expiry (which would
+   * otherwise fire later and wrongly credit the stock back).
+   */
+  async clearReservationKey(cartItemId: string): Promise<void> {
+    await this.redis.del(reservationKey(cartItemId));
   }
 }
