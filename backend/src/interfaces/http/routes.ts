@@ -55,15 +55,27 @@ export function buildRoutes(
    * /items:
    *   get:
    *     tags: [Items]
-   *     summary: List the catalogue with LIVE remaining stock (from Redis).
+   *     summary: List a page of the catalogue with LIVE remaining stock (from Redis).
+   *     parameters:
+   *       - in: query
+   *         name: page
+   *         schema: { type: integer, minimum: 1, default: 1 }
+   *         description: 1-based page number.
+   *       - in: query
+   *         name: limit
+   *         schema: { type: integer, minimum: 1, maximum: 100, default: 12 }
+   *         description: Items per page (clamped to 100).
    *     responses:
    *       200:
-   *         description: Array of items.
+   *         description: A page of items plus pagination metadata.
    *         content:
    *           application/json:
-   *             schema:
-   *               type: array
-   *               items: { $ref: '#/components/schemas/Item' }
+   *             schema: { $ref: '#/components/schemas/PagedItems' }
+   *       400:
+   *         description: page or limit is not a positive integer.
+   *         content:
+   *           application/json:
+   *             schema: { $ref: '#/components/schemas/Error' }
    */
   router.get('/items', asyncHandler(controllers.items.list));
 

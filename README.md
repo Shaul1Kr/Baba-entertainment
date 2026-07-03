@@ -94,7 +94,7 @@ Open it in **two browser windows** to watch stock counts update live across both
 | Method & path | Body | Response |
 |---------------|------|----------|
 | `POST /auth/login` | `{ name }` | `{ userId, name, token }` |
-| `GET /items` | — | `[{ id, name, description, price, remaining, imageUrl }]` |
+| `GET /items?page=1&limit=12` | — | `{ items: [{ id, name, description, price, remaining, imageUrl }], page, limit, total, totalPages }` — offset-based pagination; `page`/`limit` are positive integers (`limit` clamped to 100), invalid values → `400` |
 | `POST /cart/add` | `{ itemId, qty }` | `{ cartItemId, remaining }` · `409` if out of stock |
 | `POST /cart/remove` | `{ itemId }` | `{ remaining }` |
 | `PATCH /cart/update` | `{ itemId, delta }` | `{ itemId, qty, remaining }` · `409` if increase exceeds stock · `400` if `delta` is 0/non-integer |

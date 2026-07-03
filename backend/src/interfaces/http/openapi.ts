@@ -51,6 +51,16 @@ export const openapiSpec = swaggerJsdoc({
             imageUrl: { type: 'string' },
           },
         },
+        PagedItems: {
+          type: 'object',
+          properties: {
+            items: { type: 'array', items: { $ref: '#/components/schemas/Item' } },
+            page: { type: 'integer', example: 1 },
+            limit: { type: 'integer', example: 12 },
+            total: { type: 'integer', example: 40 },
+            totalPages: { type: 'integer', example: 4 },
+          },
+        },
         AddToCartRequest: {
           type: 'object',
           required: ['itemId'],

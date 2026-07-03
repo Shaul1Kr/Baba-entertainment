@@ -5,6 +5,14 @@ import { SocketService } from './socket.service';
 import { Cart, Item, Order, Session } from '../models';
 
 const EMPTY_CART: Cart = { lines: [], total: 0 };
+const PAGE_LIMIT = 12;
+
+export interface PageState {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
 
 /**
  * The single source of UI truth. Holds session, catalogue, and cart state in
@@ -21,6 +29,12 @@ export class CartService {
 
   private sessionSubject = new BehaviorSubject<Session | null>(this.restoreSession());
   private itemsSubject = new BehaviorSubject<Item[]>([]);
+  private pageStateSubject = new BehaviorSubject<PageState>({
+    page: 1,
+    limit: PAGE_LIMIT,
+    total: 0,
+    totalPages: 1,
+  });
   private cartSubject = new BehaviorSubject<Cart>(EMPTY_CART);
   private orderSubject = new BehaviorSubject<Order | null>(null);
   private errorSubject = new BehaviorSubject<string | null>(null);
@@ -31,6 +45,7 @@ export class CartService {
 
   readonly session$: Observable<Session | null> = this.sessionSubject.asObservable();
   readonly items$: Observable<Item[]> = this.itemsSubject.asObservable();
+  readonly pageState$: Observable<PageState> = this.pageStateSubject.asObservable();
   readonly cart$: Observable<Cart> = this.cartSubject.asObservable();
   readonly lastOrder$: Observable<Order | null> = this.orderSubject.asObservable();
   readonly error$: Observable<string | null> = this.errorSubject.asObservable();
@@ -79,12 +94,27 @@ export class CartService {
     this.orderSubject.next(null);
   }
 
-  // ---- catalogue ----
-  loadItems(): void {
-    this.api.getItems().subscribe({
-      next: (items) => this.itemsSubject.next(items),
+  // ---- catalogue (offset-based pagination; backend does the paging) ----
+  loadItems(page = this.pageStateSubject.value.page): void {
+    this.api.getItems(page, PAGE_LIMIT).subscribe({
+      next: (res) => {
+        this.itemsSubject.next(res.items);
+        this.pageStateSubject.next({
+          page: res.page,
+          limit: res.limit,
+          total: res.total,
+          totalPages: res.totalPages,
+        });
+      },
       error: () => this.errorSubject.next('Could not load items.'),
     });
+  }
+
+  /** Navigate to a page (re-fetches from the backend; no client-side slicing). */
+  goToPage(page: number): void {
+    const { totalPages } = this.pageStateSubject.value;
+    if (page < 1 || page > totalPages) return;
+    this.loadItems(page);
   }
 
   // ---- cart ----

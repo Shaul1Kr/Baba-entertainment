@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { API_BASE } from '../config';
-import { Cart, Item, Order, Session } from '../models';
+import { Cart, Order, PagedItems, Session } from '../models';
 
 /**
  * Thin wrapper over the backend REST API. No state here — just HTTP calls.
@@ -15,8 +15,10 @@ export class ApiService {
     return this.http.post<Session>(`${API_BASE}/auth/login`, { name });
   }
 
-  getItems(): Observable<Item[]> {
-    return this.http.get<Item[]>(`${API_BASE}/items`);
+  getItems(page = 1, limit = 12): Observable<PagedItems> {
+    return this.http.get<PagedItems>(`${API_BASE}/items`, {
+      params: { page, limit },
+    });
   }
 
   getCart(): Observable<Cart> {

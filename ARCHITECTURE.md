@@ -249,6 +249,18 @@ its scope. A standalone package with its own `package.json` (invoked via the roo
 `npm run test:e2e`) keeps that boundary honest and lets Playwright own the full-stack
 `webServer` lifecycle.
 
+### Pagination
+
+`GET /items` uses **offset-based** pagination (`?page=&limit=`) returning an envelope with
+`items` + `page`/`limit`/`total`/`totalPages`. The Mongoose repo implements it with
+`skip()`/`limit()` plus a separate `countDocuments()` — **two small queries chosen over a
+single `$facet` aggregation** because at this catalogue size the round-trip cost is
+negligible and the intent reads far more clearly. The `ListItems` use case merges live Redis
+`remaining` counts for **only the current page's** items. Offset paging was chosen over
+cursor-based for simplicity and because it's trivial to defend for a small, rarely-mutated
+catalogue — cursor-based paging would be the next step if the catalogue grew large or saw
+frequent inserts/deletes (where offset skips get slow and pages can shift under you).
+
 ### Logging
 
 Structured logging uses **pino** (`infrastructure/logging/logger.ts`), chosen over winston

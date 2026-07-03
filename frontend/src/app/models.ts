@@ -7,6 +7,14 @@ export interface Item {
   remaining: number;
 }
 
+export interface PagedItems {
+  items: Item[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface CartLine {
   itemId: string;
   name: string;
