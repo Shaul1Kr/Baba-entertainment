@@ -186,6 +186,14 @@ instant hot-reload dev loops for the app code.
   is not a default, and the event-driven expiry depends on it, so it's pinned in
   `docker-compose.yml` rather than left to manual configuration.
 
+**Auto-seed on startup.** Bootstrap seeds the demo catalogue if — and only if — the
+**Item** collection is empty (`seedItemsIfEmpty()`, sharing its data/insert logic with the
+`npm run seed` CLI), running right after the Mongo connect and before the Redis stock
+reconcile. It is scoped to Item only: an empty CartItem/Order/User collection is the
+correct state for a fresh app, so those are never seeded. Because it's an emptiness check,
+it's idempotent — re-running `docker-compose`/`npm start` never creates phantom
+items/carts/orders. The `npm run seed` script remains as an optional destructive reset.
+
 ---
 
 ## 8. Why TypeScript

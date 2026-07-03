@@ -1,9 +1,13 @@
 /**
- * Seeds the catalogue with demo flash-sale items and initialises Redis stock.
- * Run with: npm run seed
+ * Manual catalogue reset. Run with: npm run seed
  *
- * Idempotent-ish: it wipes existing items/carts/orders and reseeds, so you get
- * a clean, predictable demo every time.
+ * DESTRUCTIVE (unlike the startup auto-seed): it wipes existing items/carts/
+ * orders and reseeds, so you get a clean, predictable demo every time. The
+ * catalogue data + insert logic are shared with startup via seedCatalogue.ts —
+ * this script just adds the destructive reset + a Redis counter refresh.
+ *
+ * Note: startup now auto-seeds an empty catalogue, so this is optional — use it
+ * to force a clean re-seed during development.
  */
 import { env } from '../config/env.js';
 import { connectMongo, disconnectMongo } from '../infrastructure/persistence/mongoose/connection.js';
@@ -14,51 +18,7 @@ import {
 } from '../infrastructure/persistence/mongoose/schemas.js';
 import { redis, closeRedis } from '../infrastructure/redis/RedisClient.js';
 import { StockReservationService } from '../infrastructure/redis/StockReservationService.js';
-
-const DEMO_ITEMS = [
-  {
-    name: 'Golden Jackpot Hoodie',
-    description: 'Limited-run gold-threaded hoodie. Blink and it’s gone.',
-    price: 89.99,
-    imageUrl: 'https://picsum.photos/seed/hoodie/600/400',
-    totalStock: 10,
-  },
-  {
-    name: 'Neon Ace Sneakers',
-    description: 'Light-up soles, casino-floor ready.',
-    price: 149.0,
-    imageUrl: 'https://picsum.photos/seed/sneakers/600/400',
-    totalStock: 5,
-  },
-  {
-    name: 'High Roller Watch',
-    description: 'Solid-feel chronograph with an amber dial.',
-    price: 299.5,
-    imageUrl: 'https://picsum.photos/seed/watch/600/400',
-    totalStock: 3,
-  },
-  {
-    name: 'Lucky 7 Backpack',
-    description: 'Everyday carry with a jackpot-red lining.',
-    price: 59.99,
-    imageUrl: 'https://picsum.photos/seed/backpack/600/400',
-    totalStock: 20,
-  },
-  {
-    name: 'Vegas Nights Sunglasses',
-    description: 'Polarised, gold frames, pure swagger.',
-    price: 39.99,
-    imageUrl: 'https://picsum.photos/seed/sunglasses/600/400',
-    totalStock: 2,
-  },
-  {
-    name: 'Diamond Hands Mug',
-    description: 'Keeps your coffee hot through any downswing.',
-    price: 19.99,
-    imageUrl: 'https://picsum.photos/seed/mug/600/400',
-    totalStock: 50,
-  },
-];
+import { seedItemsIfEmpty } from '../bootstrap/seedCatalogue.js';
 
 async function run(): Promise<void> {
   await connectMongo();
@@ -69,8 +29,9 @@ async function run(): Promise<void> {
     OrderModel.deleteMany({}),
   ]);
 
-  const created = await ItemModel.insertMany(DEMO_ITEMS);
-  console.log(`[seed] inserted ${created.length} items`);
+  // Collection is now empty, so this inserts the shared demo catalogue.
+  await seedItemsIfEmpty();
+  const created = await ItemModel.find();
 
   // Clear any stale live-stock keys, then seed fresh counters in Redis.
   const stock = new StockReservationService(redis, env.reservationTtlSeconds);

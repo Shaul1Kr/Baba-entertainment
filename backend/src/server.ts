@@ -6,6 +6,7 @@ import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
 import { composeApp } from './composition.js';
 import { seedStock } from './bootstrap/seedStock.js';
+import { seedItemsIfEmpty } from './bootstrap/seedCatalogue.js';
 import {
   connectMongo,
   disconnectMongo,
@@ -37,6 +38,9 @@ export interface BootstrappedApp {
 export async function bootstrap(): Promise<BootstrappedApp> {
   // --- Infrastructure connections ---
   await connectMongo();
+
+  // Auto-seed the demo catalogue on first run (Item collection only, idempotent).
+  await seedItemsIfEmpty();
 
   const stock = new StockReservationService(redis, env.reservationTtlSeconds);
   await stock.init(); // preload the Lua reserve script

@@ -1,4 +1,4 @@
-import { CartItem } from './CartItem.entity.js';
+import { CartItem } from "./CartItem.entity.js";
 
 /**
  * Repository INTERFACE for cart items (active reservations). Domain-layer only.

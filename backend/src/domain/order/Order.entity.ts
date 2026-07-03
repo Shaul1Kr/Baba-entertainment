@@ -1,4 +1,4 @@
-import { DomainError } from '../shared/DomainError.js';
+import { DomainError } from "../shared/DomainError.js";
 
 export interface OrderLine {
   itemId: string;
@@ -27,7 +27,7 @@ export class Order {
 
   constructor(props: OrderProps) {
     if (props.items.length === 0) {
-      throw new DomainError('An order must contain at least one item');
+      throw new DomainError("An order must contain at least one item");
     }
     this.id = props.id;
     this.userId = props.userId;
@@ -47,6 +47,7 @@ export class Order {
       (sum, line) => sum + line.price * line.qty,
       0,
     );
+
     return new Order({
       id: params.id,
       userId: params.userId,

@@ -55,9 +55,12 @@ This starts:
 cd backend
 cp ../.env.example .env      # sane defaults already point at the docker services
 npm install
-npm run seed                 # loads demo catalogue + seeds Redis stock counters
 npm start                    # http://localhost:3000
 ```
+
+On first start the demo catalogue is **auto-seeded** if the Item collection is empty, so
+there's no manual seed step. `npm run seed` is still available as an **optional** dev tool
+that force-resets the catalogue and Redis counters to a clean state (destructive).
 
 Environment variables (see `.env.example`):
 
