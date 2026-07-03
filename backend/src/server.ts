@@ -2,8 +2,10 @@ import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import cors from 'cors';
 import express, { Express } from 'express';
+import { pinoHttp } from 'pino-http';
 import swaggerUi from 'swagger-ui-express';
 import { env } from './config/env.js';
+import { logger } from './infrastructure/logging/logger.js';
 import { composeApp } from './composition.js';
 import { seedStock } from './bootstrap/seedStock.js';
 import { seedItemsIfEmpty } from './bootstrap/seedCatalogue.js';
@@ -48,6 +50,16 @@ export async function bootstrap(): Promise<BootstrappedApp> {
   // --- HTTP + Socket.io (broadcaster) ---
   const app = express();
   app.use(cors({ origin: env.corsOrigin }));
+  // Automatic request/response logging with a per-request id for correlation.
+  // Health checks and the docs UI are skipped to keep logs readable.
+  app.use(
+    pinoHttp({
+      logger,
+      autoLogging: {
+        ignore: (req) => req.url === '/health' || (req.url?.startsWith('/api-docs') ?? false),
+      },
+    }),
+  );
   app.use(express.json());
 
   const httpServer = http.createServer(app);
@@ -85,13 +97,20 @@ async function start(): Promise<void> {
   const { httpServer } = await bootstrap();
 
   httpServer.listen(env.port, () => {
-    console.log(`[http] flash-sale backend listening on :${env.port}`);
-    console.log(`[http] API docs at http://localhost:${env.port}/api-docs`);
-    console.log(`[config] reservation TTL = ${env.reservationTtlSeconds}s`);
+    logger.info(
+      {
+        component: 'http',
+        port: env.port,
+        docs: `/api-docs`,
+        reservationTtlSeconds: env.reservationTtlSeconds,
+        env: env.nodeEnv,
+      },
+      `flash-sale backend listening on :${env.port}`,
+    );
   });
 
   const shutdown = async () => {
-    console.log('\n[shutdown] closing connections...');
+    logger.info({ component: 'http' }, 'shutting down; closing connections');
     httpServer.close();
     await closeRedis();
     process.exit(0);
@@ -106,7 +125,7 @@ const isDirectRun =
   !!process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isDirectRun) {
   start().catch((err) => {
-    console.error('[fatal] failed to start server', err);
+    logger.error({ component: 'http', err }, 'failed to start server');
     process.exit(1);
   });
 }

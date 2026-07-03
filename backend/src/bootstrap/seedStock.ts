@@ -1,6 +1,7 @@
 import { CartItemRepository } from '../domain/cart/CartItem.repository.js';
 import { ItemRepository } from '../domain/item/Item.repository.js';
 import { StockReservationService } from '../infrastructure/redis/StockReservationService.js';
+import { logger } from '../infrastructure/logging/logger.js';
 
 /**
  * Seed Redis live-stock counters from Mongo on startup, RECONCILING against any
@@ -31,5 +32,8 @@ export async function seedStock(
     await stock.seed(item.id, available);
   }
 
-  console.log(`[seed] seeded live stock for ${allItems.length} item(s)`);
+  logger.info(
+    { component: 'seed', event: 'stock.reconciled', itemCount: allItems.length },
+    'reconciled Redis stock counters from Mongo',
+  );
 }

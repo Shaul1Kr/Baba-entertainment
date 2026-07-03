@@ -1,6 +1,7 @@
 import { CartItemRepository } from '../../domain/cart/CartItem.repository.js';
 import { StockReservationService } from '../../infrastructure/redis/StockReservationService.js';
 import { StockBroadcaster } from '../ports/StockBroadcaster.js';
+import { Logger } from '../ports/Logger.js';
 
 export interface RemoveFromCartInput {
   userId: string;
@@ -22,6 +23,7 @@ export class RemoveFromCart {
     private readonly cart: CartItemRepository,
     private readonly stock: StockReservationService,
     private readonly broadcaster: StockBroadcaster,
+    private readonly logger: Logger,
   ) {}
 
   async execute(input: RemoveFromCartInput): Promise<RemoveFromCartOutput> {
@@ -30,12 +32,18 @@ export class RemoveFromCart {
     );
 
     let remaining = await this.stock.getRemaining(input.itemId);
+    let released = 0;
     for (const row of rows) {
       remaining = await this.stock.release(row.itemId, row.id, row.qty);
+      released += row.qty;
       await this.cart.deleteById(row.id);
     }
 
     this.broadcaster.emitStockUpdate(input.itemId, remaining);
+    this.logger.info(
+      { event: 'cart.remove', itemId: input.itemId, qtyReleased: released, remaining },
+      'removed from cart; stock released',
+    );
     return { remaining };
   }
 }

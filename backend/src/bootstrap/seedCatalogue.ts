@@ -1,4 +1,5 @@
 import { ItemModel } from '../infrastructure/persistence/mongoose/schemas.js';
+import { logger } from '../infrastructure/logging/logger.js';
 
 /**
  * Demo flash-sale catalogue. Single source of truth shared by both the
@@ -62,10 +63,16 @@ export const DEMO_ITEMS = [
 export async function seedItemsIfEmpty(): Promise<number> {
   const existing = await ItemModel.countDocuments();
   if (existing > 0) {
-    console.log(`[seed] catalogue present (${existing} items) — skipping auto-seed`);
+    logger.info(
+      { component: 'seed', event: 'catalogue.present', itemCount: existing },
+      'catalogue present — skipping auto-seed',
+    );
     return 0;
   }
   const created = await ItemModel.insertMany(DEMO_ITEMS);
-  console.log(`[seed] empty catalogue — auto-seeded ${created.length} demo items`);
+  logger.info(
+    { component: 'seed', event: 'catalogue.seeded', itemCount: created.length },
+    'empty catalogue — auto-seeded demo items',
+  );
   return created.length;
 }

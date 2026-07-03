@@ -19,6 +19,7 @@ import {
 import { redis, closeRedis } from '../infrastructure/redis/RedisClient.js';
 import { StockReservationService } from '../infrastructure/redis/StockReservationService.js';
 import { seedItemsIfEmpty } from '../bootstrap/seedCatalogue.js';
+import { logger } from '../infrastructure/logging/logger.js';
 
 async function run(): Promise<void> {
   await connectMongo();
@@ -43,14 +44,14 @@ async function run(): Promise<void> {
   for (const item of created) {
     await stock.seed(item._id.toString(), item.totalStock);
   }
-  console.log('[seed] seeded Redis live-stock counters');
+  logger.info({ component: 'seed', itemCount: created.length }, 'seeded Redis live-stock counters');
 
   await disconnectMongo();
   await closeRedis();
-  console.log('[seed] done');
+  logger.info({ component: 'seed' }, 'catalogue reset complete');
 }
 
 run().catch((err) => {
-  console.error('[seed] failed', err);
+  logger.error({ component: 'seed', err }, 'catalogue reset failed');
   process.exit(1);
 });

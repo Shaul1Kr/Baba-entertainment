@@ -243,6 +243,18 @@ its scope. A standalone package with its own `package.json` (invoked via the roo
 `npm run test:e2e`) keeps that boundary honest and lets Playwright own the full-stack
 `webServer` lifecycle.
 
+### Logging
+
+Structured logging uses **pino** (`infrastructure/logging/logger.ts`), chosen over winston
+because it's faster (low-overhead JSON serialization) with a simpler API; pretty-printing in
+dev is delegated to `pino-pretty` and production stays raw JSON. Crucially, the DDD
+dependency direction is preserved: `domain/` stays pure (no logger at all), and use cases
+receive the logger through **constructor injection of an application-layer `Logger` port**
+(same pattern as `StockBroadcaster`) rather than importing the pino singleton — so they
+remain unit-testable with a stub and the application layer never depends on infrastructure.
+Infrastructure and HTTP layers import the logger directly, and `pino-http` adds per-request
+ids for log correlation. Auth headers/tokens are redacted at the logger.
+
 ### API documentation
 
 OpenAPI/Swagger docs are generated from `@openapi` JSDoc blocks on the route definitions

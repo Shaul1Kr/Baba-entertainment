@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
 import { env } from '../../../config/env.js';
+import { logger } from '../../logging/logger.js';
 
 export async function connectMongo(): Promise<typeof mongoose> {
   mongoose.set('strictQuery', true);
   await mongoose.connect(env.mongoUri);
-  console.log(`[mongo] connected to ${env.mongoUri}`);
+  logger.info({ component: 'mongo' }, 'connected to MongoDB');
   return mongoose;
 }
 

@@ -1,6 +1,7 @@
 import { CartItemRepository } from '../../domain/cart/CartItem.repository.js';
 import { StockReservationService } from '../../infrastructure/redis/StockReservationService.js';
 import { StockBroadcaster } from '../ports/StockBroadcaster.js';
+import { Logger } from '../ports/Logger.js';
 
 export interface ExpireReservationInput {
   cartItemId: string;
@@ -19,6 +20,7 @@ export class ExpireReservation {
     private readonly cart: CartItemRepository,
     private readonly stock: StockReservationService,
     private readonly broadcaster: StockBroadcaster,
+    private readonly logger: Logger,
   ) {}
 
   async execute(input: ExpireReservationInput): Promise<void> {
@@ -34,5 +36,17 @@ export class ExpireReservation {
     );
     await this.cart.deleteById(cartItem.id);
     this.broadcaster.emitStockUpdate(cartItem.itemId, remaining);
+
+    // Easy to miss when testing manually — make expiry visible in real time.
+    this.logger.info(
+      {
+        event: 'reservation.expired',
+        cartItemId: cartItem.id,
+        itemId: cartItem.itemId,
+        qtyRestored: cartItem.qty,
+        remaining,
+      },
+      'reservation expired; stock restored',
+    );
   }
 }

@@ -5,6 +5,7 @@ import { ItemRepository } from '../../domain/item/Item.repository.js';
 import { DomainError, OutOfStockError } from '../../domain/shared/DomainError.js';
 import { StockReservationService } from '../../infrastructure/redis/StockReservationService.js';
 import { StockBroadcaster } from '../ports/StockBroadcaster.js';
+import { Logger } from '../ports/Logger.js';
 
 export interface AddToCartInput {
   userId: string;
@@ -36,6 +37,7 @@ export class AddToCart {
     private readonly cart: CartItemRepository,
     private readonly stock: StockReservationService,
     private readonly broadcaster: StockBroadcaster,
+    private readonly logger: Logger,
   ) {}
 
   async execute(input: AddToCartInput): Promise<AddToCartOutput> {
@@ -52,6 +54,11 @@ export class AddToCart {
     // (1) Atomic reserve — the oversell gate.
     const reservation = await this.stock.reserve(item.id, cartItemId, qty);
     if (!reservation.ok) {
+      // Core business event: reservation rejected because stock ran out.
+      this.logger.info(
+        { event: 'cart.add.rejected', itemId: item.id, qty, reason: 'out_of_stock' },
+        'add-to-cart rejected: out of stock',
+      );
       throw new OutOfStockError(item.id);
     }
 
@@ -70,11 +77,25 @@ export class AddToCart {
       await this.stock.release(item.id, cartItemId, qty);
       const remaining = await this.stock.getRemaining(item.id);
       this.broadcaster.emitStockUpdate(item.id, remaining);
+      this.logger.error(
+        { event: 'cart.add.rollback', itemId: item.id, qty, cartItemId, err },
+        'add-to-cart failed after reserve; rolled back reservation',
+      );
       throw err;
     }
 
     // (3) Broadcast live remaining.
     this.broadcaster.emitStockUpdate(item.id, reservation.remaining);
+    this.logger.info(
+      {
+        event: 'cart.add.reserved',
+        itemId: item.id,
+        qty,
+        cartItemId,
+        remaining: reservation.remaining,
+      },
+      'add-to-cart reserved',
+    );
     return { cartItemId, remaining: reservation.remaining };
   }
 }

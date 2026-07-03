@@ -6,6 +6,7 @@ import { OrderRepository } from '../../domain/order/Order.repository.js';
 import { DomainError } from '../../domain/shared/DomainError.js';
 import { StockReservationService } from '../../infrastructure/redis/StockReservationService.js';
 import { StockBroadcaster } from '../ports/StockBroadcaster.js';
+import { Logger } from '../ports/Logger.js';
 
 export interface CheckoutInput {
   userId: string;
@@ -32,6 +33,7 @@ export class Checkout {
     private readonly orders: OrderRepository,
     private readonly stock: StockReservationService,
     private readonly broadcaster: StockBroadcaster,
+    private readonly logger: Logger,
   ) {}
 
   async execute(input: CheckoutInput): Promise<CheckoutOutput> {
@@ -74,6 +76,16 @@ export class Checkout {
       this.broadcaster.emitStockUpdate(itemId, remaining);
     }
 
+    this.logger.info(
+      {
+        event: 'checkout',
+        userId: input.userId,
+        orderId: saved.id,
+        itemCount: saved.items.length,
+        total: saved.total,
+      },
+      'checkout complete',
+    );
     return { orderId: saved.id, total: saved.total, items: saved.items };
   }
 }

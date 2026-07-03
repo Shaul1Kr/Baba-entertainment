@@ -11,6 +11,7 @@ import { MongooseCartItemRepository } from './infrastructure/persistence/mongoos
 import { MongooseOrderRepository } from './infrastructure/persistence/mongoose/OrderRepository.js';
 import { MongooseUserRepository } from './infrastructure/persistence/mongoose/UserRepository.js';
 import { StockReservationService } from './infrastructure/redis/StockReservationService.js';
+import { logger } from './infrastructure/logging/logger.js';
 import { AuthController } from './interfaces/http/controllers/AuthController.js';
 import { ItemsController } from './interfaces/http/controllers/ItemsController.js';
 import { CartController } from './interfaces/http/controllers/CartController.js';
@@ -32,14 +33,19 @@ export function composeApp(deps: {
   const cart = new MongooseCartItemRepository();
   const orders = new MongooseOrderRepository();
 
+  // The concrete pino logger is bound to the application's Logger port HERE, in
+  // the composition root — use cases receive it via constructor injection and
+  // never import the singleton, keeping the DDD dependency direction intact.
+  const useCaseLog = logger.child({ layer: 'useCase' });
+
   // Use cases (application) — one per action.
   const loginUser = new LoginUser(users);
   const listItems = new ListItems(items, deps.stock);
-  const addToCart = new AddToCart(items, cart, deps.stock, deps.broadcaster);
-  const removeFromCart = new RemoveFromCart(cart, deps.stock, deps.broadcaster);
+  const addToCart = new AddToCart(items, cart, deps.stock, deps.broadcaster, useCaseLog);
+  const removeFromCart = new RemoveFromCart(cart, deps.stock, deps.broadcaster, useCaseLog);
   const getCart = new GetCart(cart, items);
-  const checkout = new Checkout(cart, items, orders, deps.stock, deps.broadcaster);
-  const expireReservation = new ExpireReservation(cart, deps.stock, deps.broadcaster);
+  const checkout = new Checkout(cart, items, orders, deps.stock, deps.broadcaster, useCaseLog);
+  const expireReservation = new ExpireReservation(cart, deps.stock, deps.broadcaster, useCaseLog);
 
   // Controllers (interface) — thin.
   const controllers: ControllerBundle = {

@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { env } from '../../config/env.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * We keep TWO connections:
@@ -10,8 +11,13 @@ import { env } from '../../config/env.js';
 export const redis = new Redis(env.redisUrl);
 export const subscriber = new Redis(env.redisUrl);
 
-redis.on('error', (err) => console.error('[redis] error', err.message));
-subscriber.on('error', (err) => console.error('[redis:sub] error', err.message));
+redis.on('ready', () => logger.info({ component: 'redis' }, 'connected to Redis'));
+redis.on('error', (err) =>
+  logger.error({ component: 'redis', err }, 'Redis connection error'),
+);
+subscriber.on('error', (err) =>
+  logger.error({ component: 'redis:sub', err }, 'Redis subscriber error'),
+);
 
 export function stockKey(itemId: string): string {
   return `stock:${itemId}`;

@@ -1,5 +1,6 @@
 import type { Redis } from 'ioredis';
 import { parseReservationKey } from './RedisClient.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Event-driven reservation expiry.
@@ -23,13 +24,20 @@ export class ReservationExpirySubscriber {
   async start(): Promise<void> {
     const channel = `__keyevent@${this.dbIndex}__:expired`;
     await this.subscriber.subscribe(channel);
-    console.log(`[redis:sub] listening for expirations on ${channel}`);
+    logger.info({ component: 'redis:sub', channel }, 'listening for reservation expirations');
 
     this.subscriber.on('message', (_channel: string, expiredKey: string) => {
       const cartItemId = parseReservationKey(expiredKey);
       if (!cartItemId) return; // not one of our reservation keys
+      logger.debug(
+        { component: 'redis:sub', event: 'reservation.expired.received', cartItemId },
+        'reservation expiry event received',
+      );
       this.onExpire(cartItemId).catch((err) =>
-        console.error(`[expiry] failed to release ${cartItemId}:`, err),
+        logger.error(
+          { component: 'redis:sub', event: 'reservation.expired.failed', cartItemId, err },
+          'failed to process reservation expiry',
+        ),
       );
     });
   }

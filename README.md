@@ -71,6 +71,7 @@ Environment variables (see `.env.example`):
 | `REDIS_URL` | `redis://localhost:6379` | Redis connection |
 | `RESERVATION_TTL_SECONDS` | `600` | How long a cart reservation is held before auto-release (**dynamic, never hardcoded**) |
 | `CORS_ORIGIN` | `http://localhost:4200` | Allowed frontend origin(s), comma-separated |
+| `LOG_LEVEL` | `info` | Logging verbosity (see [Logging](#logging)) |
 
 > Tip: to watch expiry in action, run with a short TTL:
 > `RESERVATION_TTL_SECONDS=5 npm start`, add an item, and watch the count return after 5s.
@@ -125,6 +126,25 @@ e2e/                      # Playwright end-to-end tests (full stack, system Chro
 ```
 
 ---
+
+## Logging
+
+Structured logging with [pino](https://getpino.io). Each request gets a **request id**
+so all logs for one request correlate, and the core business events are logged as
+greppable structured objects.
+
+- **Levels used:** `info` for business events (cart add reserved/rejected, cart remove,
+  checkout, reservation expiry) and lifecycle (startup, Mongo/Redis connected, seed +
+  stock-reconcile results, server listening); `debug` for high-frequency events
+  (`stock:update` socket broadcasts, socket connect/disconnect) so production stays
+  readable; `error` for unexpected failures (with the serialized stack + route context).
+- **Set the level** with `LOG_LEVEL` (default `info`), e.g. `LOG_LEVEL=debug npm start`
+  to see the live socket broadcasts.
+- **Pretty vs JSON:** development pretty-prints (colourised, via `pino-pretty`, a dev-only
+  dependency). Any other `NODE_ENV` (incl. production) emits one JSON object per line for
+  log shippers. Controlled by `NODE_ENV`, not hardcoded.
+- **Secrets:** the `Authorization` header and any `token` field are redacted and never
+  logged; request bodies are not logged.
 
 ## Testing
 

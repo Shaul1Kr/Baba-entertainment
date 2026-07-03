@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server as IOServer } from 'socket.io';
 import { StockBroadcaster } from '../../application/ports/StockBroadcaster.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Socket.io adapter implementing the StockBroadcaster port. Every add / remove
@@ -16,14 +17,20 @@ export class SocketServer implements StockBroadcaster {
     });
 
     this.io.on('connection', (socket) => {
-      console.log(`[socket] client connected: ${socket.id}`);
+      logger.debug({ component: 'socket', socketId: socket.id }, 'client connected');
       socket.on('disconnect', () =>
-        console.log(`[socket] client disconnected: ${socket.id}`),
+        logger.debug({ component: 'socket', socketId: socket.id }, 'client disconnected'),
       );
     });
   }
 
   emitStockUpdate(itemId: string, remaining: number): void {
     this.io.emit('stock:update', { itemId, remaining });
+    // Fires on every add/remove/checkout/expiry — debug level to keep prod logs
+    // readable in a busy sale.
+    logger.debug(
+      { component: 'socket', event: 'stock:update', itemId, remaining },
+      'broadcast stock:update',
+    );
   }
 }

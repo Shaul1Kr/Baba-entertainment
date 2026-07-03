@@ -30,6 +30,10 @@ export const env = {
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean),
+  nodeEnv: process.env.NODE_ENV ?? 'development',
+  // Logging: level from env (default info); pretty output is dev-only.
+  logLevel: process.env.LOG_LEVEL ?? 'info',
+  isProduction: (process.env.NODE_ENV ?? 'development') === 'production',
 };
 
 export type Env = typeof env;
