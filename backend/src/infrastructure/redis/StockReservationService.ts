@@ -98,4 +98,16 @@ export class StockReservationService {
   async clearReservationKey(cartItemId: string): Promise<void> {
     await this.redis.del(reservationKey(cartItemId));
   }
+
+  /**
+   * Reset a reservation key's TTL back to the full duration. Used when a cart is
+   * actively edited (quantity change) so it doesn't expire mid-adjustment. If
+   * the key is already gone this is a harmless no-op.
+   */
+  async refreshReservation(
+    cartItemId: string,
+    ttlSeconds: number = this.defaultTtlSeconds,
+  ): Promise<void> {
+    await this.redis.expire(reservationKey(cartItemId), ttlSeconds);
+  }
 }

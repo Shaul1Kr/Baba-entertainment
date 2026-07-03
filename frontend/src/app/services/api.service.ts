@@ -34,6 +34,16 @@ export class ApiService {
     return this.http.post<{ remaining: number }>(`${API_BASE}/cart/remove`, { itemId });
   }
 
+  updateQuantity(
+    itemId: string,
+    delta: number,
+  ): Observable<{ itemId: string; qty: number; remaining: number }> {
+    return this.http.patch<{ itemId: string; qty: number; remaining: number }>(
+      `${API_BASE}/cart/update`,
+      { itemId, delta },
+    );
+  }
+
   checkout(): Observable<Order> {
     return this.http.post<Order>(`${API_BASE}/checkout`, {});
   }

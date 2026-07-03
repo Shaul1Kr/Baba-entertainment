@@ -84,6 +84,12 @@ Mongo remains the source of truth for the *catalogue* and *orders*; Redis is the
 of truth for *live availability*. On startup the counters are **reconciled**:
 `available = totalStock − Σ(outstanding reservations)`, so a restart can't double-count.
 
+In-cart quantity changes (`PATCH /cart/update`) go through the same primitives: an increase
+reuses the atomic `reserveStock` Lua path as add-to-cart (so it's equally oversell-safe — a
+`delta > 1` just reserves that many units in one atomic call), a decrease reuses the same
+Redis increment as remove (deleting the row + reservation key if quantity hits 0), and any
+successful edit resets the reservation TTL so an actively-adjusted cart doesn't expire mid-edit.
+
 ---
 
 ## 3. Reservation expiry: event-driven, not polled

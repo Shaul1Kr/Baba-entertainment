@@ -97,6 +97,7 @@ Open it in **two browser windows** to watch stock counts update live across both
 | `GET /items` | — | `[{ id, name, description, price, remaining, imageUrl }]` |
 | `POST /cart/add` | `{ itemId, qty }` | `{ cartItemId, remaining }` · `409` if out of stock |
 | `POST /cart/remove` | `{ itemId }` | `{ remaining }` |
+| `PATCH /cart/update` | `{ itemId, delta }` | `{ itemId, qty, remaining }` · `409` if increase exceeds stock · `400` if `delta` is 0/non-integer |
 | `GET /cart` | — | `{ lines: [...], total }` |
 | `POST /checkout` | — | `{ orderId, total, items }` (creates Order, clears cart) |
 

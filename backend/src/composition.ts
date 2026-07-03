@@ -3,6 +3,7 @@ import { LoginUser } from './application/useCases/LoginUser.js';
 import { ListItems } from './application/useCases/ListItems.js';
 import { AddToCart } from './application/useCases/AddToCart.js';
 import { RemoveFromCart } from './application/useCases/RemoveFromCart.js';
+import { UpdateCartItemQuantity } from './application/useCases/UpdateCartItemQuantity.js';
 import { GetCart } from './application/useCases/GetCart.js';
 import { Checkout } from './application/useCases/Checkout.js';
 import { ExpireReservation } from './application/useCases/ExpireReservation.js';
@@ -43,6 +44,13 @@ export function composeApp(deps: {
   const listItems = new ListItems(items, deps.stock);
   const addToCart = new AddToCart(items, cart, deps.stock, deps.broadcaster, useCaseLog);
   const removeFromCart = new RemoveFromCart(cart, deps.stock, deps.broadcaster, useCaseLog);
+  const updateCartItemQuantity = new UpdateCartItemQuantity(
+    items,
+    cart,
+    deps.stock,
+    deps.broadcaster,
+    useCaseLog,
+  );
   const getCart = new GetCart(cart, items);
   const checkout = new Checkout(cart, items, orders, deps.stock, deps.broadcaster, useCaseLog);
   const expireReservation = new ExpireReservation(cart, deps.stock, deps.broadcaster, useCaseLog);
@@ -51,7 +59,7 @@ export function composeApp(deps: {
   const controllers: ControllerBundle = {
     auth: new AuthController(loginUser),
     items: new ItemsController(listItems),
-    cart: new CartController(addToCart, removeFromCart, getCart),
+    cart: new CartController(addToCart, removeFromCart, updateCartItemQuantity, getCart),
     checkout: new CheckoutController(checkout),
   };
 

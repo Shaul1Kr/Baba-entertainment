@@ -138,6 +138,43 @@ export function buildRoutes(
 
   /**
    * @openapi
+   * /cart/update:
+   *   patch:
+   *     tags: [Cart]
+   *     summary: Adjust an item's cart quantity by a signed delta (atomic, oversell-safe).
+   *     description: >
+   *       delta is a signed non-zero integer. Increase (+N) reserves N more units
+   *       through the same atomic Lua path as add-to-cart; decrease (-N) releases N
+   *       back. Reaching qty 0 removes the item from the cart.
+   *     security: [{ bearerAuth: [] }]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema: { $ref: '#/components/schemas/UpdateCartRequest' }
+   *     responses:
+   *       200:
+   *         description: Updated. Returns the item's new cart qty and live remaining stock.
+   *         content:
+   *           application/json:
+   *             schema: { $ref: '#/components/schemas/UpdateCartResponse' }
+   *       400:
+   *         description: delta missing, zero, or not an integer.
+   *         content:
+   *           application/json:
+   *             schema: { $ref: '#/components/schemas/Error' }
+   *       409:
+   *         description: Not enough stock to increase — cart unchanged.
+   *         content:
+   *           application/json:
+   *             schema: { $ref: '#/components/schemas/Error' }
+   *       401:
+   *         description: Missing/invalid bearer token.
+   */
+  router.patch('/cart/update', requireAuth, asyncHandler(controllers.cart.update));
+
+  /**
+   * @openapi
    * /checkout:
    *   post:
    *     tags: [Checkout]

@@ -75,6 +75,26 @@ export const openapiSpec = swaggerJsdoc({
           type: 'object',
           properties: { remaining: { type: 'integer', example: 3 } },
         },
+        UpdateCartRequest: {
+          type: 'object',
+          required: ['itemId', 'delta'],
+          properties: {
+            itemId: { type: 'string' },
+            delta: {
+              type: 'integer',
+              description: 'Signed non-zero quantity change (e.g. +1 or -1).',
+              example: 1,
+            },
+          },
+        },
+        UpdateCartResponse: {
+          type: 'object',
+          properties: {
+            itemId: { type: 'string' },
+            qty: { type: 'integer', description: "Item's new total quantity in the cart (0 if removed)", example: 2 },
+            remaining: { type: 'integer', example: 1 },
+          },
+        },
         CartLine: {
           type: 'object',
           properties: {
